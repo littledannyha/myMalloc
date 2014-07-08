@@ -4,7 +4,7 @@
 #include <string.h>
 
 #define NUMROWS 26
-#define LARGESTSIZE 1073741824
+#define LARGESTSIZE 1073741816
 int* bs; // block size
 void** pt; // pointer array
 
@@ -20,7 +20,7 @@ void init(){
 		bs[i] = acc;
 		acc = acc << 1; //multiply by 2
 	}
-	
+	assert(bs[NUMROWS-1] == LARGESTSIZE + 8);	
 	pt = (void**)calloc(NUMROWS,sizeof(void*));
 }
 
@@ -62,24 +62,25 @@ void* mc(int size){
 void fr(void* addr){
 	void* startOfBlock = (char*) addr - 8;
 	int ptIndex = *((int*)startOfBlock);	
-	memcpy(startOfBlock, pt[ptIndex], sizeof(void*));//block knows where next free block is 
+	
+	memcpy(startOfBlock, &pt[ptIndex], sizeof(void*));//block knows where next free block is 
 	pt[ptIndex] = startOfBlock;
 	
 }
 
 
-void fixedTest(){
+void fixedTest(int size){
+	printf("testing with size %d\n",size);
 	int i,j;
-	init();
 	int calls = 3;
-	int testSize = 20;
+	int testSize = size;
 
 	void** buffs = alloca(sizeof(double*) * calls);
 	for(i = 0; i < calls; i++){
 		void* al = mc(testSize);
 		memset(al, i + 'a', testSize);
 		buffs[i] = al;
-		}
+	}
 
 	for(i = 0; i < calls; i++){
 		char* curr = (char*) buffs[i];
@@ -94,8 +95,17 @@ void fixedTest(){
 		fr(buffs[i]);	
 		
 	}
+	printf("\n\n");
 }
 
 int main(int argc, char* argv[]){
-	fixedTest();	
+	int i; 
+	init();
+	for(i = 8; i < 55; i++){
+		fixedTest(i);
+	}
+	for(i = 100; i < 102; i++){
+		fixedTest(i);
+	}
 }
+
