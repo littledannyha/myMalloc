@@ -98,14 +98,36 @@ void fixedTest(int size){
 	printf("\n\n");
 }
 
+void printRows(){
+	int i; 
+	for(i = 0; i < NUMROWS; i++){
+		void* row = pt[i];
+		int acc = 0;
+		void* curr = row;
+
+		while(curr != 0){
+			acc++;
+		//TODO fix this	
+
+		}
+		printf("row %d: %d items",i,acc);
+		
+	}
+
+}
 int main(int argc, char* argv[]){
 	int i; 
 	init();
-	for(i = 8; i < 55; i++){
+	/*for(i = 8; i < 55; i++){
 		fixedTest(i);
 	}
 	for(i = 100; i < 102; i++){
 		fixedTest(i);
+	}*/
+	for(i = 20; i <= 20; i++){
+
+		fixedTest(i);
 	}
+	//fixedTest(20);
 }
 
