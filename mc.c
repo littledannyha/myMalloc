@@ -3,67 +3,108 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define NUMROWS 26
-#define LARGESTSIZE 1073741816
-int* bs; // block size
-void** pt; // pointer array
+#define NUMROWS 2
+#define LARGESTSIZE 56
+//#define LARGESTSIZE 1073741816
+long long* bs; // block size
+long long** pt; // pointer array to the starts of blocks
 
 void fr(void* addr);
 void init();
 void* mc(int size);
 
 void init(){
-	int acc = 32;
+	long long acc = 32;
 	int i;
-	bs = malloc(NUMROWS * sizeof(int));
+	bs = malloc(NUMROWS * sizeof(acc));
 	for(i = 0; i < NUMROWS; i++){
 		bs[i] = acc;
 		acc = acc << 1; //multiply by 2
 	}
 	assert(bs[NUMROWS-1] == LARGESTSIZE + 8);	
-	pt = (void**)calloc(NUMROWS,sizeof(void*));
+	pt = calloc(NUMROWS,sizeof(long long*));
 }
 
+int readHeaderIndex(long long* headerAddr){
+	return *((int*)headerAddr);
+}
+int readBodyIndex(long long* bodyAddr){ 
+	return readHeaderIndex(bodyAddr - 1);
+}
+void setHeaderIndex(long long* headerAddr,int index){
+	int* target = (int*) headerAddr;
+	*target = index;	
+}
+void setBodyIndex(long long* bodyAddr,int index){
+	int* target = (int*) (bodyAddr - 1);
+	*target = index;	
+}
+
+
+long long* readHeaderPointer(long long* headerAddr){
+	return *headerAddr;
+}
+long long* readBodyPointer(long long* bodyAddr){
+	return *(bodyAddr - 1);
+}
+void setHeaderPointer(long long* headerAddr, long long* address){
+	*headerAddr = address;
+}
+void setBodyPointer(long long* bodyAddr, long long* address){
+	long long* target = bodyAddr - 1;
+	*target = address;
+}
+
+
+
 void* mc(int size){
-	int searching = size + 8;
+	long long searching = size + 8;
 	// checks if I need to malloc more space
 	if(searching > LARGESTSIZE){
-		return malloc(bs[NUMROWS - 1]);	
+		return malloc(2 * bs[NUMROWS - 1]);	
 	}
 	// finds the row in the ptrs table
 	int ptRow = -1;
 	int i;
 	for(i = 0; i < NUMROWS; i++){
-		if (searching < bs[i]){
+		if (searching <= bs[i]){
 			ptRow = i;
 			break;	
 		}	
 	}
 	assert(ptRow >= 0);
-	// if there are no more blocks of this size,get a larger one and split
+	// if no more blocks of this size
 	if(pt[ptRow] == 0){
-		void* toSplit = mc(2 * size + 8);
-		void* half = (char*) toSplit + bs[ptRow];
-		*((int*) half) = ptRow; //assign the corresponding index ptr to the 2nd half of black
-		fr((char*)half + 8);
-		return (char*)toSplit + 8;	
+		// 8 bytes into block to split
+		long long* toSplit = /*(long long*)*/mc(2 * size + 8);
+		long long* startOfBlock = toSplit - 1;
+		long long* half = (long long*) ((char*) startOfBlock + bs[ptRow]);
+		//assign the corresponding index ptr to the 2nd half of black
+		*((int*) half) = ptRow; 
+		fr(half + 1); // free 8 bytes after given
+		return toSplit;	
 	} 
+
+
 	else{
-		void* out = pt[ptRow];
+		long long* out = pt[ptRow];
 		//pt[ptRow] = (void*) *((double*)out);//*((void*) out);
-		memcpy(&pt[ptRow], out, sizeof(void*)); // assign the next block
+		//memcpy(&pt[ptRow], out, sizeof(void*)); // assign the next block
 		//pt[i] = *((double*)out); // assign the next block
-		*(int*) out = i; // assign pt index to block
-		return (char*) out + 8; 
+		*((int*) out) = i; // assign pt index to block
+		return out + 1; // return 8 bytes after header
 	}
 
 }
-
+// takes in the body of a block(8 bytes after start of header) and frees it
 void fr(void* addr){
-	void* startOfBlock = (char*) addr - 8;
+	long long* startOfBlock = ((long long*) addr) - 1;
+	// index of pt row to add block to
 	int ptIndex = *((int*)startOfBlock);	
-	
-	memcpy(startOfBlock, &pt[ptIndex], sizeof(void*));//block knows where next free block is 
+
+	// update the new Blocks next pointer	
+	//memcpy(startOfBlock,pt+ptIndex,sizeof(long long));
+	*startOfBlock = (long long)pt[ptIndex];
 	pt[ptIndex] = startOfBlock;
 	
 }
@@ -75,13 +116,13 @@ void fixedTest(int size){
 	int calls = 3;
 	int testSize = size;
 
-	void** buffs = alloca(sizeof(double*) * calls);
+	long long** buffs = alloca(sizeof(long long*) * calls);
 	for(i = 0; i < calls; i++){
-		void* al = mc(testSize);
+		long long* al = mc(testSize);
 		memset(al, i + 'a', testSize);
 		buffs[i] = al;
 	}
-
+	// BUG at this point, buffs[1] and buffs[2] are identical 
 	for(i = 0; i < calls; i++){
 		char* curr = (char*) buffs[i];
 		for(j = 0; j < testSize; j++){
@@ -97,6 +138,8 @@ void fixedTest(int size){
 	}
 	printf("\n\n");
 }
+
+
 
 void printRows(){
 	int i; 
@@ -124,10 +167,9 @@ int main(int argc, char* argv[]){
 	for(i = 100; i < 102; i++){
 		fixedTest(i);
 	}*/
-	for(i = 20; i <= 20; i++){
+//	fixedTest(20);
+	long long* header = alloca(24);
+	long long* body = header +1;
 
-		fixedTest(i);
-	}
-	//fixedTest(20);
 }
 
