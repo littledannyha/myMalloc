@@ -3,9 +3,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define NUMROWS 2
-#define LARGESTSIZE 56
-//#define LARGESTSIZE 1073741816
+#define SMALLESTSIZE 32
+
+//#define NUMROWS 2
+#define NUMROWS 26
+//#define LARGESTSIZE 56
+#define LARGESTSIZE 1073741816
+
+#ifndef max
+	#define max(a,b) (((a) > (b)) ? (a) :(b))
+#endif
 long long* bs; // block size
 long long** pt; // pointer array to the starts of blocks
 
@@ -14,8 +21,7 @@ void init();
 void* mc(int size);
 
 void init(){
-	long long acc = 32;
-	int i;
+	long long acc = SMALLESTSIZE; int i;
 	bs = malloc(NUMROWS * sizeof(acc));
 	for(i = 0; i < NUMROWS; i++){
 		bs[i] = acc;
@@ -56,7 +62,8 @@ void setBodyPointer(long long* bodyAddr, long long* address){
 
 
 void* mc(int size){
-	
+	size = max(size,24);	
+		
 	long long searching = size + 8;
 	// checks if I need to malloc more space
 	if(searching > LARGESTSIZE){
@@ -114,8 +121,24 @@ void fixedTest(int size){
 	int i,j;
 	int calls = 3;
 	int testSize = size;
+	
+
+
+	// finds the row in the ptrs table
+	int ptRow = -1;
+	
+	for(i = 0; i < NUMROWS; i++){
+		if (size <= bs[i]){
+			ptRow = i;
+			break;	
+		}	
+	}
+	
+
+
 
 	long long** buffs = alloca(sizeof(long long*) * calls);
+	memset(buffs,0,sizeof(long long*) * calls);
 	printf("begin malloc\n\n");
 	for(i = 0; i < calls; i++){
 		long long* al = mc(testSize);
@@ -123,7 +146,6 @@ void fixedTest(int size){
 		memset(al, i + 'a', testSize);
 		buffs[i] = al;
 		// printf("Current header at index %d: %d\n",i,readBodyIndex(buffs[i]));
-		//assert(readBodyIndex(buffs[i]) == 0);
 	}
 	// BUG at this point, buffs[1] and buffs[2] are identical 
 	printf("\n\nprinting contents\n\n");
@@ -133,18 +155,15 @@ void fixedTest(int size){
 			assert(curr[j] == i + 'a');	
 		}
 		printf("%s\n",curr);
-		
+
 	}
-	
+
 	printf("\n\nbegin freeing buffs\n\n");
 	for(i = 0; i < calls;i++){
 		printf("freeing item %d at address 0x%x\n",i,buffs[i]);
-		printf("this block's next: 0x%x\n",pt[0]);
+		printf("this block's next: 0x%x\n",pt[ptRow]);
 		fr(buffs[i]);	
-		
-		
 	}
-
 }
 
 
@@ -182,6 +201,14 @@ int main(int argc, char* argv[]){
 		for(i = atoi(argv[1]); i < max; i++){
 			fixedTest(i);	
 		}
+	}
+	else{
+		int fibSize = 1;
+		for(i = 1; fibSize < LARGESTSIZE; i++){
+			fibSize *= i;
+			fixedTest(fibSize);	
+		}
+
 	}
 
 	/*
