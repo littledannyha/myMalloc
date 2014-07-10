@@ -1,3 +1,4 @@
+#include <time.h>
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,9 +7,10 @@
 #define SMALLESTSIZE 32
 
 //#define NUMROWS 2
-#define NUMROWS 26
 //#define LARGESTSIZE 56
+#define NUMROWS 26
 #define LARGESTSIZE 1073741816
+
 
 #ifndef max
 	#define max(a,b) (((a) > (b)) ? (a) :(b))
@@ -19,7 +21,7 @@ long long** pt; // pointer array to the starts of blocks
 void fr(void* addr);
 void init();
 void* mc(int size);
-
+//
 void init(){
 	long long acc = SMALLESTSIZE; int i;
 	bs = malloc(NUMROWS * sizeof(acc));
@@ -29,6 +31,12 @@ void init(){
 	}
 	assert(bs[NUMROWS-1] == LARGESTSIZE + 8);	
 	pt = calloc(NUMROWS,sizeof(long long*));
+}
+
+void terminate(){
+
+	free(bs);
+	free(pt);
 }
 
 int readHeaderIndex(long long* headerAddr){
@@ -116,10 +124,12 @@ void fr(void* addr){
 }
 
 
-void fixedTest(int size){
+void fixedTest(int size,int c, int verify){
+	clock_t begin,end;
+	double time_spent;
 	printf("\nSTART TEST ON SIZE %d\n\n",size);
 	int i,j;
-	int calls = 3;
+	int calls = c;
 	int testSize = size;
 	
 
@@ -133,37 +143,82 @@ void fixedTest(int size){
 			break;	
 		}	
 	}
-	
-
-
 
 	long long** buffs = alloca(sizeof(long long*) * calls);
 	memset(buffs,0,sizeof(long long*) * calls);
-	printf("begin malloc\n\n");
-	for(i = 0; i < calls; i++){
-		long long* al = mc(testSize);
-		printf("malloc'd at index %d: 0x%x\n",i,al);
-		memset(al, i + 'a', testSize);
-		buffs[i] = al;
-		// printf("Current header at index %d: %d\n",i,readBodyIndex(buffs[i]));
-	}
-	// BUG at this point, buffs[1] and buffs[2] are identical 
-	printf("\n\nprinting contents\n\n");
-	for(i = 0; i < calls; i++){
-		char* curr = (char*) buffs[i];
-		for(j = 0; j < testSize; j++){
-			assert(curr[j] == i + 'a');	
-		}
-		printf("%s\n",curr);
 
+
+
+
+
+
+
+/*
+
+
+	for(i = 0; i < calls; i++){
+//		long long* al = mc(testSize);
+//		buffs[i] = al;
+//		printf("malloc'd at index %d: 0x%x\n",i,al);
+
+//		if(verify){memset(al, i + 'a', testSize);}
+		buffs[i] = mc(testSize);
 	}
 
-	printf("\n\nbegin freeing buffs\n\n");
+
+
+
 	for(i = 0; i < calls;i++){
-		printf("freeing item %d at address 0x%x\n",i,buffs[i]);
-		printf("this block's next: 0x%x\n",pt[ptRow]);
+//		printf("freeing item %d at address 0x%x\n",i,buffs[i]);
+//		printf("this block's next: 0x%x\n",pt[ptRow]);
 		fr(buffs[i]);	
 	}
+
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+	printf("begin malloc\n\n");
+	begin = clock();
+	for(i = 0; i < calls; i++){
+//		long long* al = mc(testSize);
+//		buffs[i] = al;
+//		printf("malloc'd at index %d: 0x%x\n",i,al);
+
+//		if(verify){memset(al, i + 'a', testSize);}
+		buffs[i] = mc(testSize);
+	}
+	end = clock();
+	printf("mallocing %d blocks of size %d took %lfs\n",calls,size,(double)(end - begin)/CLOCKS_PER_SEC);
+	if(verify){
+		printf("\n\nverifying contents\n\n");
+		for(i = 0; i < calls; i++){
+			char* curr = (char*) buffs[i];
+			for(j = 0; j < testSize; j++){
+				assert(curr[j] == i + 'a');	
+			}
+	//	printf("%s\n",curr);
+		}
+	}
+	printf("\n\nbegin freeing buffs\n\n");
+	begin = clock();
+	for(i = 0; i < calls;i++){
+//		printf("freeing item %d at address 0x%x\n",i,buffs[i]);
+//		printf("this block's next: 0x%x\n",pt[ptRow]);
+		fr(buffs[i]);	
+	}
+	end = clock();
+	printf("freeing %d blocks of size %d took %lfs\n",calls,size,(double)(end - begin)/CLOCKS_PER_SEC);
 }
 
 
@@ -189,47 +244,29 @@ int main(int argc, char* argv[]){
 	int i; 
 	int min,max,target;
 	init();
-
+	int verify = argv[argc-1] == "-v" ? 1 : 0; // flag used to verify blocks
 	for(i = 0; i < 100; i++){
 		printf("\n");
 	}
-	if(argc == 2){
-		fixedTest(atoi(argv[1]));
+	if(argc == 3){
+		fixedTest(atoi(argv[1]),atoi(argv[2]),0);
 	}
-	else if(argc == 3){
-		int max = atoi(argv[2]);
-		for(i = atoi(argv[1]); i < max; i++){
-			fixedTest(i);	
-		}
+	printf("verifying blocks");
+	if(argc == 4){
+		fixedTest(atoi(argv[1]),atoi(argv[2]),verify);
 	}
 	else{
+		printf("usage: size numcalls [-v]\n");	
+		exit(0);
+		/*
 		int fibSize = 1;
 		for(i = 1; fibSize < LARGESTSIZE; i++){
+			fixedTest(fibSize, verify);	
 			fibSize *= i;
-			fixedTest(fibSize);	
 		}
-
+		*/
 	}
 
-	/*
-	for(i = 9; i < 5700; i++){
-		fixedTest(i);
-	}
-	*/
 	printf("\n\nSUCCESS\n");
-	/*
-	for(i = 100; i < 102; i++){
-		fixedTest(i);
-	}
-*/
-	//fixedTest(9);
-	/*
-	long long* header = alloca(24);
-	long long* body = header +1;
-	
-	setHeaderIndex(header,33);
-	assert(readHeaderIndex(header) == readBodyIndex(body));
-	assert(readHeaderPointer(header) == readBodyPointer(body));
-	*/
 }
 
