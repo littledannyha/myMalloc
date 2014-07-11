@@ -127,16 +127,17 @@ void fr(void* addr){
 void fixedTest(int size,int c, int verify){
 	clock_t begin,end;
 	double time_spent;
-	printf("\nSTART TEST ON SIZE %d\n\n",size);
 	int i,j;
 	int calls = c;
 	int testSize = size;
-	
 
+
+
+	printf("\nSTART TEST ON SIZE %d\n\n",size);
+	
 
 	// finds the row in the ptrs table
 	int ptRow = -1;
-	
 	for(i = 0; i < NUMROWS; i++){
 		if (size <= bs[i]){
 			ptRow = i;
@@ -149,67 +150,42 @@ void fixedTest(int size,int c, int verify){
 
 
 
-
-
-
-
-/*
-
-
-	for(i = 0; i < calls; i++){
-//		long long* al = mc(testSize);
-//		buffs[i] = al;
-//		printf("malloc'd at index %d: 0x%x\n",i,al);
-
-//		if(verify){memset(al, i + 'a', testSize);}
-		buffs[i] = mc(testSize);
-	}
-
-
-
-
-	for(i = 0; i < calls;i++){
-//		printf("freeing item %d at address 0x%x\n",i,buffs[i]);
-//		printf("this block's next: 0x%x\n",pt[ptRow]);
-		fr(buffs[i]);	
-	}
-
-*/
-
-
-
-
-
-
-
-
-
-
-
-
-
 	printf("begin malloc\n\n");
 	begin = clock();
 	for(i = 0; i < calls; i++){
-//		long long* al = mc(testSize);
-//		buffs[i] = al;
+		long long* al = mc(testSize);
+		buffs[i] = al;
 //		printf("malloc'd at index %d: 0x%x\n",i,al);
 
-//		if(verify){memset(al, i + 'a', testSize);}
-		buffs[i] = mc(testSize);
+		if(verify){memset(al, (i*i + 'a')%126, testSize);}
+//		buffs[i] = mc(testSize);
 	}
 	end = clock();
+
+
+
 	printf("mallocing %d blocks of size %d took %lfs\n",calls,size,(double)(end - begin)/CLOCKS_PER_SEC);
+
+
 	if(verify){
 		printf("\n\nverifying contents\n\n");
 		for(i = 0; i < calls; i++){
 			char* curr = (char*) buffs[i];
+//			printf("%s\n",curr);
 			for(j = 0; j < testSize; j++){
-				assert(curr[j] == i + 'a');	
+				//assert(curr[j] == i + 'a');	
+
+				if(curr[j] != (i*i + 'a')%126){
+					printf("curr[j] != i + 'a' failed with\t i: %d\t j: %d\t char:%s\n",i,j);	
+					exit(1);
+				};	
 			}
-	//	printf("%s\n",curr);
 		}
 	}
+
+
+
+
 	printf("\n\nbegin freeing buffs\n\n");
 	begin = clock();
 	for(i = 0; i < calls;i++){
@@ -221,7 +197,15 @@ void fixedTest(int size,int c, int verify){
 	printf("freeing %d blocks of size %d took %lfs\n",calls,size,(double)(end - begin)/CLOCKS_PER_SEC);
 }
 
+void loopTest(int size, int calls,int verify, int reps){
+	int i;
 
+	for(i = 0; i < reps; i++){
+		fixedTest(size,calls,verify);
+
+	}
+
+}
 
 void printRows(){
 	int i; 
@@ -244,19 +228,21 @@ int main(int argc, char* argv[]){
 	int i; 
 	int min,max,target;
 	init();
-	int verify = argv[argc-1] == "-v" ? 1 : 0; // flag used to verify blocks
+	int verify = strncmp(argv[argc-1],"-v",2) == 0 ? 1 : 0; // flag used to verify blocks
+	if(verify){printf("verifying blocks");}
+
 	for(i = 0; i < 100; i++){
 		printf("\n");
 	}
-	if(argc == 3){
-		fixedTest(atoi(argv[1]),atoi(argv[2]),0);
-	}
-	printf("verifying blocks");
-	if(argc == 4){
+	if(argc - verify == 3){
 		fixedTest(atoi(argv[1]),atoi(argv[2]),verify);
 	}
+	if(argc - verify == 4){
+		loopTest(atoi(argv[1]),atoi(argv[2]),verify,atoi(argv[3]));
+	}
 	else{
-		printf("usage: size numcalls [-v]\n");	
+		fixedTest(1000,1000000,1);
+	//	printf("usage: size numcalls [-v]\n");	
 		exit(0);
 		/*
 		int fibSize = 1;
