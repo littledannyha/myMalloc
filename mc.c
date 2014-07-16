@@ -10,6 +10,7 @@
 //#define LARGESTSIZE 56
 #define NUMROWS 26
 #define LARGESTSIZE 1073741816
+#define RANDCASES 4000000 
 
 
 #ifndef max
@@ -223,10 +224,61 @@ void cycleTest(int size,int c,int reps){
 	end = clock();
 	double diff = ((double)(end - begin))/CLOCKS_PER_SEC;	
 	totalTime += diff;
-
 }
 
+int* genTest(char* filePath){
+	int i;
+	char* firstSpace;	
+	char* firstNewLine;
+	char* currLine = calloc(100, sizeof(char));
+	FILE* f = fopen(filePath);
+	int* out = malloc(RANDCASES * 3 * sizeof(int));
+	for(i = 0; i < RANDCASES; i++){
+		fgets(currLine,100,f);
+		firstSpace = strchr(currLine,' ');
+		firstNewLine = strchr(currLine,'\n');
+		// two numbers
+		if((firstSpace != 0) && (firstSpace < firstNewLine)){
+			out[i * 3] = 2;
+			out[i * 3 + 1] = atoi(currLine);
+			out[i * 3 + 2] = atoi(firstSpace);	
+		}
+		// one number
+		else{
+			out[i * 3] = 1;
+			out[i * 3 + 1] = atoi(currLine);
+			out[i * 3 + 2] = -1;
+		}
+	}
 
+
+
+	free(currLine);
+	return out;
+		
+} 
+
+void randoTest(chor* filePath){
+	int i;
+	int fm;
+	int* args = genTest(filePath);
+	char** malloced = malloc(sizeof(char*) * 2000);
+
+	for(i = 0; i < 4000000; i++){
+		// free
+		if((fm = args[i + i + i]) == 1){
+			fr(	
+		}
+		// malloc
+		else{
+
+
+		}
+
+	}
+		
+	
+}
 
 
 

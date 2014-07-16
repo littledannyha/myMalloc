@@ -5,31 +5,20 @@
 
 int main(int argc, char* argv[]){
 	int i,j;
-	if(argc != 3){
-		printf("usage: blockSize numBlocks\n");
+	if(argc != 2){
+		printf("usage: blockSize\n");
 		exit(0);
 	}
+
 
 	srand(time(NULL));
 	int numRand = atoi(argv[1]);
 	char* fileName = argv[2];
-	FILE* currFile = fopen(fileName,"w");
-
-
-	
-	fputc('{',currFile);	
+	FILE* currFile = fopen("randArr","w");
+	fwrite(&numRand,sizeof(int),1,currFile);
 	for(i = 0; i < numRand; i++){
 		int r = rand()%26;
-		fprintf(currFile,"%d",r);
-		if(i != numRand -1){
-			fputc(',',currFile);		
-		}
+		fwrite(&r,sizeof(int),1,currFile);
 	}
-	fputc('}',currFile);	
-	fputc('\n',currFile);	
-
-
-
-
 	fclose(currFile);
 }
