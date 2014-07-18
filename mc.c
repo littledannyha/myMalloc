@@ -11,8 +11,7 @@
 #define NUMROWS 26
 #define LARGESTSIZE 1073741816
 #define RANDCASES 4000000 
-
-
+#define PRINTSTATUS 0
 #ifndef max
 	#define max(a,b) (((a) > (b)) ? (a) :(b))
 #endif
@@ -23,7 +22,6 @@ double mallocTime;
 double freeTime;
 double totalTime;
 int* sizes;
-
 void fr(void* addr);
 void init();
 void* mc(int size);
@@ -81,7 +79,7 @@ void setBodyPointer(long long* bodyAddr, long long* address){
 void* mc(int size){
 	size = max(size,24);	
 
-	long long searching = size + 8;
+	long long searching = size + 8;// take an extra 8 bytes into account
 	// checks if I need to malloc more space
 	if(searching > LARGESTSIZE){
 		void* out;
@@ -227,21 +225,22 @@ void cycleTest(int size,int c,int reps){
 }
 
 int* genTest(char* filePath){
-	int i;
+	int i,j;
 	char* firstSpace;	
 	char* firstNewLine;
 	char* currLine = calloc(100, sizeof(char));
-	FILE* f = fopen(filePath);
-	int* out = malloc(RANDCASES * 3 * sizeof(int));
+	FILE* f = fopen(filePath,"r");
+	int* out;
+	out = calloc(RANDCASES * 3 , sizeof(out));
 	for(i = 0; i < RANDCASES; i++){
 		fgets(currLine,100,f);
-		firstSpace = strchr(currLine,' ');
+		firstSpace = strchr(currLine,'\t');
 		firstNewLine = strchr(currLine,'\n');
 		// two numbers
-		if((firstSpace != 0) && (firstSpace < firstNewLine)){
+		if((firstSpace != NULL) && (firstSpace < firstNewLine)){
 			out[i * 3] = 2;
 			out[i * 3 + 1] = atoi(currLine);
-			out[i * 3 + 2] = atoi(firstSpace);	
+			out[i * 3 + 2] = atoi(firstSpace); // want # of doubles not bytes	
 		}
 		// one number
 		else{
@@ -250,34 +249,75 @@ int* genTest(char* filePath){
 			out[i * 3 + 2] = -1;
 		}
 	}
-
-
-
 	free(currLine);
+	printf("finished reading file\n");
 	return out;
-		
 } 
-
-void randoTest(chor* filePath){
+/*
+ * fill a block in a convenient way such that 
+ * I can check for integrity of data
+ * The entire block is filled based on info from
+ * the header
+ * start value will be the index in the table
+ */
+void fillBlock(long long startValue,int size,long long* block){
 	int i;
-	int fm;
-	int* args = genTest(filePath);
-	char** malloced = malloc(sizeof(char*) * 2000);
+	size = size;
+	for(i = 0; i < size; i++){
+		block[i] = startValue + i;
+	}
+}
 
+/*
+ * verify that a block has not been overwritten
+ * by another block since being filled using 
+ * fillBlock
+ */
+int verifyBlock(long startValue,int size, long long* block){
+	int i;
+	size = size; // dealing with number of doubles
+	for(i = 0; i < size; i++){
+		assert(block[i] == startValue + i);
+	}
+}
+
+void randoTest(char* filePath, int verify){
+	clock_t begin,end;
+	int i;
+	int morf,index,size;
+	int* args = genTest(filePath);
+	long long** malloced;
+	malloced = calloc(sizeof(malloced), 2000);
+	sizes = calloc(sizeof(int),2000);
+	begin = clock();
 	for(i = 0; i < 4000000; i++){
-		// free
-		if((fm = args[i + i + i]) == 1){
-			fr(	
+		int morf = args[3 * i];
+		//assert(morf == 1 || morf == 2);
+		int index = args[3 * i + 1];
+		//assert(index >= 0 && index < 2000);
+		if(morf == 1){
+			assert(malloced[index] != 0);
+			if(verify){
+				verifyBlock(index,sizes[index],malloced[index]);
+			}
+			fr(malloced[index]);
+			malloced[index] = 0;
 		}
 		// malloc
 		else{
-
-
+			size = args[3 * i + 2];
+			sizes[index] = size;
+			assert(malloced[index] == 0);	
+			malloced[index] = mc(size);
+			if(verify){
+				fillBlock(index,size,malloced[index]);
+			}
 		}
-
 	}
-		
-	
+	end = clock();
+	totalTime += ((double)(end - begin)/CLOCKS_PER_SEC);
+	free(malloced);	
+
 }
 
 
@@ -287,13 +327,14 @@ int main(int argc, char* argv[]){
 	int min,max,target;
 	init();
 	int verify = strncmp(argv[argc-1],"-v",2) == 0 ? 1 : 0; // flag used to verify blocks
-	if(verify){printf("verifying blocks");}
-	
+	if(1){printf("verifying blocks");}
+	randoTest("mf.txt",1);
 	/*
 	for(i = 0; i < 100; i++){
 		printf("\n");
 	}
 	*/
+	/*
 	if(argc - verify == 3){
 		cycleTest(atoi(argv[1]),atoi(argv[2]),1);
 	}
@@ -303,18 +344,12 @@ int main(int argc, char* argv[]){
 	else{
 		printf("usage: size numcalls [-v]\n");	
 		exit(0);
-		/*
-		int fibSize = 1;
-		for(i = 1; fibSize < LARGESTSIZE; i++){
-			fixedTest(fibSize, verify);	
-			fibSize *= i;
-		}
-		*/
 	}
-
+	*/
 	printf("total time freeing: %lf\n",freeTime);
 	printf("total time mallocing: %lf\n",mallocTime);
 	printf("total time mallocing and freeing: %lf\n",totalTime);
 	printf("\n\nSUCCESS\n");
+	return 0;
 }
 
