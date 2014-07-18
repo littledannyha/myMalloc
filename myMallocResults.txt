@@ -1,0 +1,7 @@
+verifying blocksfinished reading file
+total time freeing: 0.000000
+total time mallocing: 0.000000
+total time mallocing and freeing: 135.640000
+
+
+SUCCESS

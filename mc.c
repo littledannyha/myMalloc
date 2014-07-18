@@ -262,8 +262,8 @@ int* genTest(char* filePath){
  */
 void fillBlock(long long startValue,int size,long long* block){
 	int i;
-	size = size;
-	for(i = 0; i < size; i++){
+	int lim = size/8;
+	for(i = 0; i < lim; i++){
 		block[i] = startValue + i;
 	}
 }
@@ -275,8 +275,8 @@ void fillBlock(long long startValue,int size,long long* block){
  */
 int verifyBlock(long startValue,int size, long long* block){
 	int i;
-	size = size; // dealing with number of doubles
-	for(i = 0; i < size; i++){
+	int lim = size/8; // dealing with number of doubles
+	for(i = 0; i < lim; i++){
 		assert(block[i] == startValue + i);
 	}
 }

@@ -1,0 +1,7 @@
+file read
+Total time mallocing: 0.000000
+Total time freeing: 0.000000
+Total time: 147.500000
+
+
+SUCCESS
