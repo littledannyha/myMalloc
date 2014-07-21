@@ -5,7 +5,8 @@
 #include <alloca.h>
 #include <string.h>
 #define RANDCASES 4000000
-
+#define TESTFILE "mf.txt"
+#define VERIFY 1
 double totalTime,mallocTime,freeTime;
 double diff;
 
@@ -63,6 +64,15 @@ void randoTest(char* filePath){
 	int i;
 	clock_t begin,end;
 	int morf,index,size;
+	
+	if(VERIFY){
+		printf("verifying blocks\n");
+	}
+	else{
+		printf("not verifying blocks");
+	}
+	
+	printf("test file: %s\n",filePath);
 	int* args = genTest(filePath);
 	printf("file read\n");
 	long long** malloced;
@@ -74,7 +84,9 @@ void randoTest(char* filePath){
 		int index = args[3 * i + 1];
 		if(morf == 1){
 			//begin = clock();
-			verifyBlock(index,sizes[index],malloced[index]);
+			if(VERIFY){
+				verifyBlock(index,sizes[index],malloced[index]);
+			}
 			free(malloced[index]);
 			//end = clock();
 			//freeTime += ((double) (end - begin))/CLOCKS_PER_SEC; 
@@ -88,7 +100,9 @@ void randoTest(char* filePath){
 			//assert(malloced[index] == 0);	
 			//begin = clock();
 			malloced[index] = malloc(size);
-			fillBlock(index,sizes[index],malloced[index]);
+			if(VERIFY){
+				fillBlock(index,sizes[index],malloced[index]);
+			}
 			//end = clock();
 			//mallocTime += ((double) (end - begin))/CLOCKS_PER_SEC; 
 			//totalTime += ((double) (end - begin))/CLOCKS_PER_SEC; 
@@ -166,6 +180,7 @@ int main(int argc, char* argv[]){
 	
 	int i; 
 	int size,calls,reps,currRep;
+	printf("benchmark malloc\n");
 	if(argc == 3){
 		size = atoi(argv[1]);
 		calls = atoi(argv[2]);
@@ -186,8 +201,7 @@ int main(int argc, char* argv[]){
 		printf("usage: size numcalls\n");	
 		exit(0);
 		*/
-		printf("verifying elements\n");
-		randoTest("mf.txt");
+		randoTest(TESTFILE);
 
 	}
 

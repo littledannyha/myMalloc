@@ -5,13 +5,14 @@
 #include <string.h>
 
 #define SMALLESTSIZE 32
-
+#define TESTFILE "mf.txt"
 //#define NUMROWS 2
 //#define LARGESTSIZE 56
 #define NUMROWS 26
 #define LARGESTSIZE 1073741816
 #define RANDCASES 4000000 
 #define PRINTSTATUS 0
+#define VERIFY 1
 #ifndef max
 	#define max(a,b) (((a) > (b)) ? (a) :(b))
 #endif
@@ -285,12 +286,13 @@ void randoTest(char* filePath, int verify){
 	clock_t begin,end;
 	int i;
 	int morf,index,size;
+	printf("reading from file %s\n",filePath);
 	int* args = genTest(filePath);
 	long long** malloced;
 	malloced = calloc(sizeof(malloced), 2000);
 	sizes = calloc(sizeof(int),2000);
 	begin = clock();
-	for(i = 0; i < 4000000; i++){
+	for(i = 0; i < RANDCASES; i++){
 		int morf = args[3 * i];
 		//assert(morf == 1 || morf == 2);
 		int index = args[3 * i + 1];
@@ -327,8 +329,8 @@ int main(int argc, char* argv[]){
 	int min,max,target;
 	init();
 	int verify = strncmp(argv[argc-1],"-v",2) == 0 ? 1 : 0; // flag used to verify blocks
-	if(1){printf("verifying blocks");}
-	randoTest("mf.txt",1);
+	if(1){printf("verifying blocks\n");}
+	randoTest(TESTFILE,VERIFY);
 	/*
 	for(i = 0; i < 100; i++){
 		printf("\n");
