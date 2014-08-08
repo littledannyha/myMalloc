@@ -46,7 +46,12 @@ void terminate(){
 	free(bs);
 	free(pt);
 }
-
+/* functions that help manipulate blocks
+ * functions that contain "header" are to be called on the start of the block, which is 8 bytes behind pointers returned by malloc
+ * functions containing "body" are to be called on pointers returned by malloc
+ * functions containing "Pointer" set the next pointer when a block is being freed
+ * functions containing "Index" set the index of the block list when a block is being allocated
+ */
 int readHeaderIndex(long long* headerAddr){
 	return *((int*)headerAddr);
 }
@@ -329,7 +334,7 @@ int main(int argc, char* argv[]){
 	int min,max,target;
 	init();
 	int verify = strncmp(argv[argc-1],"-v",2) == 0 ? 1 : 0; // flag used to verify blocks
-	if(1){printf("verifying blocks\n");}
+	if(VERIFY){printf("verifying blocks\n");}
 	randoTest(TESTFILE,VERIFY);
 	/*
 	for(i = 0; i < 100; i++){
